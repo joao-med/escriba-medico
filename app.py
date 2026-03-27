@@ -21,11 +21,8 @@ from utils import anonymize, get_anonymization_summary
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# API key do ambiente (opcional — usuário pode inserir na UI)
 API_KEY_ENV = os.environ.get("GOOGLE_API_KEY", "")
-PROVIDER_ENV = os.environ.get("LLM_PROVIDER", "google")  # "google" ou "anthropic"
-
-# ── Templates de protocolo rápido ─────────────────────────────────────────────
+PROVIDER_ENV = os.environ.get("LLM_PROVIDER", "google")
 
 TEMPLATES = {
     "🆕 Consulta livre": "",
@@ -72,7 +69,6 @@ EXEMPLO = {
     )
 }
 
-# ── Funções principais ─────────────────────────────────────────────────────────
 
 def load_template(template_name: str) -> str:
     return TEMPLATES.get(template_name, "")
@@ -98,10 +94,6 @@ def analisar(
     custom_prompt: str = "",
     progress=gr.Progress(),
 ) -> tuple:
-    """
-    Fluxo principal: texto → anonimizar → 4 agentes → outputs.
-    Retorna: (prontuario_1, avaliacao, decisao, prontuario_2, status_anonimizacao)
-    """
     error = validate(texto, api_key)
     if error:
         return error, "", "", "", ""
@@ -109,27 +101,21 @@ def analisar(
     effective_key = api_key.strip() or API_KEY_ENV
 
     try:
-        # 1. Anonimização
         progress(0.05, desc="Anonimizando texto...")
         texto_anonimizado = anonymize(texto)
         status_anon = get_anonymization_summary(texto, texto_anonimizado)
-        logger.info(f"Anonimização: {status_anon}")
 
-        # 2. Agente 1 — Prontuário 1
         progress(0.2, desc="Agente 1: estruturando prontuário...")
         prontuario_1 = run_agent1_translator(
             texto_anonimizado, effective_key, provider, custom_prompt
         )
 
-        # 3. Agente 2 — Avaliação (lacunas)
         progress(0.45, desc="Agente 2: avaliando lacunas...")
         avaliacao = run_agent2_evaluator(prontuario_1, effective_key, provider)
 
-        # 4. Agente 3 — Decisão clínica
         progress(0.65, desc="Agente 3: raciocínio clínico...")
         decisao = run_agent3_emergency(prontuario_1, effective_key, provider)
 
-        # 5. Agente 4 — Prontuário 2
         progress(0.85, desc="Agente 4: consolidando prontuário final...")
         prontuario_2 = run_agent4_summarizer(prontuario_1, decisao, effective_key, provider)
 
@@ -138,8 +124,7 @@ def analisar(
 
     except Exception as e:
         logger.error(f"Erro no pipeline: {e}")
-        err = f"❌ Erro durante análise: {str(e)}"
-        return err, "", "", "", ""
+        return f"❌ Erro durante análise: {str(e)}", "", "", "", ""
 
 
 def regenerar_prontuario2(
@@ -149,16 +134,13 @@ def regenerar_prontuario2(
     provider: str,
     progress=gr.Progress(),
 ) -> str:
-    """Agente 4 no modo revisão — aplica instrução do médico ao Prontuário 2."""
     if not prontuario_2_atual.strip():
         return "⚠️ Execute a análise primeiro para gerar o Prontuário 2."
     if not instrucao.strip():
         return "⚠️ Digite uma instrução de revisão antes de regenerar."
-
     effective_key = api_key.strip() or API_KEY_ENV
     if not effective_key:
         return "⚠️ Insira uma API Key."
-
     progress(0.3, desc="Aplicando revisão...")
     resultado = run_agent4_revision(prontuario_2_atual, instrucao, effective_key, provider)
     progress(1.0, desc="Revisão concluída!")
@@ -166,7 +148,6 @@ def regenerar_prontuario2(
 
 
 def nova_consulta():
-    """Limpa todos os campos para nova consulta."""
     return ("", "", "", "", "", "", "")
 
 
@@ -175,42 +156,26 @@ def nova_consulta():
 CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-:root { color-scheme: light !important; }
+/* Force light mode */
+:root, html { color-scheme: light only !important; }
+.dark, html.dark, body.dark { all: unset !important; }
 
-body, .gradio-container, .dark {
+body, .gradio-container {
     font-family: 'Inter', system-ui, sans-serif !important;
-    background: #f8f9fa !important;
+    background: #f5f7fa !important;
     color: #111827 !important;
 }
 
-.protocolo-btn {
-    font-size: 0.8rem !important;
-    padding: 6px 10px !important;
-}
-
-.status-bar {
-    font-size: 0.75rem;
-    color: #666;
-    padding: 4px 0;
-}
-
-.header-title {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: #1a1a2e;
-}
-
-.header-sub {
-    font-size: 0.85rem;
-    color: #666;
-}
+.header-title { font-size: 1.4rem; font-weight: 700; color: #1a1a2e; }
+.header-sub   { font-size: 0.85rem; color: #666; }
+.status-bar   { font-size: 0.75rem; color: #666; padding: 4px 0; }
 
 .stt-btn {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     padding: 7px 16px;
-    background: #2563eb;
+    background: #2563eb !important;
     color: white !important;
     border: none;
     border-radius: 6px;
@@ -220,31 +185,27 @@ body, .gradio-container, .dark {
     transition: background 0.2s;
 }
 .stt-btn:hover { background: #1d4ed8 !important; }
-
-.stt-status {
-    font-size: 0.78rem;
-    color: #dc2626;
-    font-weight: 500;
-}
+.stt-status { font-size: 0.78rem; color: #dc2626; font-weight: 500; }
 
 footer { display: none !important; }
 """
 
-# ── Speech-to-Text (Web Speech API) ──────────────────────────────────────────
+# ── JS: light mode enforcement + Speech-to-Text ──────────────────────────────
 
-STT_HTML = """
-<div style="margin: 6px 0 10px 0; display: flex; align-items: center; gap: 10px;">
-  <button class="stt-btn" id="stt-btn"
-          onclick="window.toggleSTT && window.toggleSTT()"
-          title="Transcrição por voz em português — requer Chrome">
-    🎤 Gravar áudio
-  </button>
-  <span class="stt-status" id="stt-status"></span>
-</div>
-"""
-
-STT_JS = """
+APP_JS = """
 () => {
+  /* ---- Force light mode ---- */
+  const forceLight = () => {
+    document.documentElement.classList.remove('dark');
+    document.body.classList.remove('dark');
+    document.documentElement.style.colorScheme = 'light';
+  };
+  forceLight();
+  new MutationObserver(forceLight).observe(document.documentElement, {
+    attributes: true, attributeFilter: ['class', 'style']
+  });
+
+  /* ---- Speech-to-Text (Web Speech API, pt-BR) ---- */
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   let recognition = null, isRec = false;
 
@@ -260,7 +221,7 @@ STT_JS = """
     const btn = document.getElementById('stt-btn');
     const st  = document.getElementById('stt-status');
     if (!SR) {
-      if (st) st.textContent = '⚠️ Use Chrome para speech-to-text';
+      if (st) st.textContent = '\u26a0\ufe0f Use Chrome para speech-to-text';
       return;
     }
     if (isRec) { recognition.stop(); return; }
@@ -272,8 +233,8 @@ STT_JS = """
 
     recognition.onstart = () => {
       isRec = true;
-      if (btn) { btn.textContent = '⏹️ Parar gravação'; btn.style.background = '#dc2626'; }
-      if (st)  st.textContent = '🔴 Gravando... fale agora';
+      if (btn) { btn.textContent = '\u23f9\ufe0f Parar grava\u00e7\u00e3o'; btn.style.background = '#dc2626'; }
+      if (st)  st.textContent = '\ud83d\udd34 Gravando... fale agora';
     };
     recognition.onresult = (e) => {
       let t = '';
@@ -283,17 +244,28 @@ STT_JS = """
     };
     recognition.onend = () => {
       isRec = false;
-      if (btn) { btn.textContent = '🎤 Gravar áudio'; btn.style.background = ''; }
+      if (btn) { btn.textContent = '\ud83c\udfa4 Gravar \u00e1udio'; btn.style.background = ''; }
       if (st)  st.textContent = '';
     };
     recognition.onerror = (e) => {
-      if (st) st.textContent = '⚠️ ' + e.error;
+      if (st) st.textContent = '\u26a0\ufe0f ' + e.error;
       isRec = false;
-      if (btn) { btn.textContent = '🎤 Gravar áudio'; btn.style.background = ''; }
+      if (btn) { btn.textContent = '\ud83c\udfa4 Gravar \u00e1udio'; btn.style.background = ''; }
     };
     recognition.start();
   };
 }
+"""
+
+STT_HTML = """
+<div style="margin: 6px 0 10px 0; display: flex; align-items: center; gap: 10px;">
+  <button class="stt-btn" id="stt-btn"
+          onclick="window.toggleSTT && window.toggleSTT()"
+          title="Transcri\u00e7\u00e3o por voz em portugu\u00eas \u2014 requer Chrome">
+    \ud83c\udfa4 Gravar \u00e1udio
+  </button>
+  <span class="stt-status" id="stt-status"></span>
+</div>
 """
 
 # ── Interface Gradio ──────────────────────────────────────────────────────────
@@ -302,10 +274,9 @@ with gr.Blocks(
     css=CSS,
     title="Escriba Médico",
     theme=gr.themes.Default(),
-    js=STT_JS,
+    js=APP_JS,
 ) as demo:
 
-    # Header
     gr.HTML("""
     <div style="padding: 16px 0 8px 0; border-bottom: 1px solid #e5e7eb; margin-bottom: 16px;">
         <span class="header-title">🩺 Escriba Médico</span>
@@ -316,10 +287,8 @@ with gr.Blocks(
     """)
 
     with gr.Row():
-        # ── Coluna esquerda — INPUT ──────────────────────────────────────────
         with gr.Column(scale=1):
 
-            # Protocolos rápidos
             gr.Markdown("**Protocolo rápido**")
             template_selector = gr.Dropdown(
                 choices=list(TEMPLATES.keys()),
@@ -328,7 +297,6 @@ with gr.Blocks(
                 container=False,
             )
 
-            # Configuração API
             with gr.Accordion("⚙️ Configuração", open=False):
                 api_key_input = gr.Textbox(
                     label="API Key",
@@ -348,14 +316,13 @@ with gr.Blocks(
                     label="📝 Instruções adicionais para o Agente 1 (opcional)",
                     placeholder=(
                         'Ex: "Sempre adicione Escore HEART ao final do prontuário"\n'
-                        '"Quando EF ausente, escreva Não realizado ao invés de Não informado"\n'
+                        '"Quando EF ausente, escreva N\u00e3o realizado ao inv\u00e9s de N\u00e3o informado"\n'
                         '"Destaque sinais de alarme em negrito"'
                     ),
                     lines=4,
-                    info="Combinado com o prompt nativo. Deixe vazio para usar o padrão.",
+                    info="Combinado com o prompt nativo. Deixe vazio para usar o padr\u00e3o.",
                 )
 
-            # Área de texto principal
             texto_input = gr.Textbox(
                 label="Texto da consulta",
                 placeholder=(
@@ -372,12 +339,10 @@ with gr.Blocks(
                 elem_id="texto-consulta",
             )
 
-            # Botão de speech-to-text
             gr.HTML(STT_HTML)
 
             status_anon = gr.Markdown("", elem_classes=["status-bar"])
 
-            # Botões de ação
             with gr.Row():
                 btn_exemplo = gr.Button("📋 Exemplo", variant="secondary", size="sm")
                 btn_limpar = gr.Button("🗑️ Limpar", variant="secondary", size="sm")
@@ -388,7 +353,6 @@ with gr.Blocks(
                 size="lg",
             )
 
-        # ── Coluna direita — OUTPUT ──────────────────────────────────────────
         with gr.Column(scale=1):
 
             with gr.Tabs():
@@ -412,8 +376,7 @@ with gr.Blocks(
                         lines=3,
                     )
                     btn_regenerar = gr.Button(
-                        "🔄 Regenerar Prontuário 2",
-                        variant="secondary",
+                        "🔄 Regenerar Prontuário 2", variant="secondary"
                     )
 
                 with gr.Tab("🧠 Decisão Clínica"):
@@ -428,7 +391,6 @@ with gr.Blocks(
 
             btn_nova = gr.Button("🆕 Nova Consulta", variant="secondary")
 
-    # Disclaimer
     gr.HTML("""
     <div style="margin-top: 16px; padding: 10px; background: #fff8e1;
                 border-left: 3px solid #f59e0b; border-radius: 4px;
@@ -439,14 +401,9 @@ with gr.Blocks(
     </div>
     """)
 
-    # ── Eventos ───────────────────────────────────────────────────────────────
-
     template_selector.change(
-        fn=load_template,
-        inputs=[template_selector],
-        outputs=[texto_input],
+        fn=load_template, inputs=[template_selector], outputs=[texto_input]
     )
-
     btn_exemplo.click(fn=load_example, outputs=[texto_input])
     btn_limpar.click(fn=lambda: "", outputs=[texto_input])
 
@@ -465,13 +422,8 @@ with gr.Blocks(
     btn_nova.click(
         fn=nova_consulta,
         outputs=[
-            texto_input,
-            prontuario1_out,
-            avaliacao_out,
-            decisao_out,
-            prontuario2_out,
-            instrucao_input,
-            status_anon,
+            texto_input, prontuario1_out, avaliacao_out,
+            decisao_out, prontuario2_out, instrucao_input, status_anon,
         ],
     )
 
