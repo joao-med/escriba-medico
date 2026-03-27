@@ -95,6 +95,7 @@ def analisar(
     texto: str,
     api_key: str,
     provider: str,
+    custom_prompt: str = "",
     progress=gr.Progress(),
 ) -> tuple:
     """
@@ -116,7 +117,9 @@ def analisar(
 
         # 2. Agente 1 — Prontuário 1
         progress(0.2, desc="Agente 1: estruturando prontuário...")
-        prontuario_1 = run_agent1_translator(texto_anonimizado, effective_key, provider)
+        prontuario_1 = run_agent1_translator(
+            texto_anonimizado, effective_key, provider, custom_prompt
+        )
 
         # 3. Agente 2 — Avaliação (lacunas)
         progress(0.45, desc="Agente 2: avaliando lacunas...")
@@ -172,9 +175,12 @@ def nova_consulta():
 CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-body, .gradio-container {
+:root { color-scheme: light !important; }
+
+body, .gradio-container, .dark {
     font-family: 'Inter', system-ui, sans-serif !important;
     background: #f8f9fa !important;
+    color: #111827 !important;
 }
 
 .protocolo-btn {
@@ -199,12 +205,105 @@ body, .gradio-container {
     color: #666;
 }
 
+.stt-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 16px;
+    background: #2563eb;
+    color: white !important;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.stt-btn:hover { background: #1d4ed8 !important; }
+
+.stt-status {
+    font-size: 0.78rem;
+    color: #dc2626;
+    font-weight: 500;
+}
+
 footer { display: none !important; }
+"""
+
+# ── Speech-to-Text (Web Speech API) ──────────────────────────────────────────
+
+STT_HTML = """
+<div style="margin: 6px 0 10px 0; display: flex; align-items: center; gap: 10px;">
+  <button class="stt-btn" id="stt-btn"
+          onclick="window.toggleSTT && window.toggleSTT()"
+          title="Transcrição por voz em português — requer Chrome">
+    🎤 Gravar áudio
+  </button>
+  <span class="stt-status" id="stt-status"></span>
+</div>
+"""
+
+STT_JS = """
+() => {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognition = null, isRec = false;
+
+  function updateTextbox(txt) {
+    const el = document.querySelector('#texto-consulta textarea');
+    if (!el) return;
+    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
+    setter.call(el, (el.value ? el.value + ' ' : '') + txt.trim());
+    el.dispatchEvent(new Event('input', {bubbles: true}));
+  }
+
+  window.toggleSTT = function() {
+    const btn = document.getElementById('stt-btn');
+    const st  = document.getElementById('stt-status');
+    if (!SR) {
+      if (st) st.textContent = '⚠️ Use Chrome para speech-to-text';
+      return;
+    }
+    if (isRec) { recognition.stop(); return; }
+
+    recognition = new SR();
+    recognition.lang = 'pt-BR';
+    recognition.continuous = true;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+      isRec = true;
+      if (btn) { btn.textContent = '⏹️ Parar gravação'; btn.style.background = '#dc2626'; }
+      if (st)  st.textContent = '🔴 Gravando... fale agora';
+    };
+    recognition.onresult = (e) => {
+      let t = '';
+      for (let i = e.resultIndex; i < e.results.length; i++)
+        if (e.results[i].isFinal) t += e.results[i][0].transcript + ' ';
+      if (t) updateTextbox(t);
+    };
+    recognition.onend = () => {
+      isRec = false;
+      if (btn) { btn.textContent = '🎤 Gravar áudio'; btn.style.background = ''; }
+      if (st)  st.textContent = '';
+    };
+    recognition.onerror = (e) => {
+      if (st) st.textContent = '⚠️ ' + e.error;
+      isRec = false;
+      if (btn) { btn.textContent = '🎤 Gravar áudio'; btn.style.background = ''; }
+    };
+    recognition.start();
+  };
+}
 """
 
 # ── Interface Gradio ──────────────────────────────────────────────────────────
 
-with gr.Blocks(css=CSS, title="Escriba Médico") as demo:
+with gr.Blocks(
+    css=CSS,
+    title="Escriba Médico",
+    theme=gr.themes.Default(),
+    js=STT_JS,
+) as demo:
 
     # Header
     gr.HTML("""
@@ -222,13 +321,12 @@ with gr.Blocks(css=CSS, title="Escriba Médico") as demo:
 
             # Protocolos rápidos
             gr.Markdown("**Protocolo rápido**")
-            with gr.Row():
-                template_selector = gr.Dropdown(
-                    choices=list(TEMPLATES.keys()),
-                    value="🆕 Consulta livre",
-                    label="",
-                    container=False,
-                )
+            template_selector = gr.Dropdown(
+                choices=list(TEMPLATES.keys()),
+                value="🆕 Consulta livre",
+                label="",
+                container=False,
+            )
 
             # Configuração API
             with gr.Accordion("⚙️ Configuração", open=False):
@@ -245,6 +343,17 @@ with gr.Blocks(css=CSS, title="Escriba Médico") as demo:
                 gr.Markdown(
                     "_Google: Gemma 27B (grátis) · Anthropic: Claude Sonnet (melhor qualidade)_",
                 )
+                gr.Markdown("---")
+                custom_prompt_input = gr.Textbox(
+                    label="📝 Instruções adicionais para o Agente 1 (opcional)",
+                    placeholder=(
+                        'Ex: "Sempre adicione Escore HEART ao final do prontuário"\n'
+                        '"Quando EF ausente, escreva Não realizado ao invés de Não informado"\n'
+                        '"Destaque sinais de alarme em negrito"'
+                    ),
+                    lines=4,
+                    info="Combinado com o prompt nativo. Deixe vazio para usar o padrão.",
+                )
 
             # Área de texto principal
             texto_input = gr.Textbox(
@@ -260,7 +369,11 @@ with gr.Blocks(css=CSS, title="Escriba Médico") as demo:
                 ),
                 lines=14,
                 max_lines=30,
+                elem_id="texto-consulta",
             )
+
+            # Botão de speech-to-text
+            gr.HTML(STT_HTML)
 
             status_anon = gr.Markdown("", elem_classes=["status-bar"])
 
@@ -288,8 +401,6 @@ with gr.Blocks(css=CSS, title="Escriba Médico") as demo:
                     prontuario2_out = gr.Markdown(
                         value="_Execute a análise para gerar o Prontuário 2._"
                     )
-
-                    # Caixa de revisão
                     gr.Markdown("---\n**💬 Revisar Prontuário 2**")
                     instrucao_input = gr.Textbox(
                         label="Instrução de revisão",
@@ -315,7 +426,6 @@ with gr.Blocks(css=CSS, title="Escriba Médico") as demo:
                         value="_Execute a análise para ver as sugestões._"
                     )
 
-            # Botão nova consulta
             btn_nova = gr.Button("🆕 Nova Consulta", variant="secondary")
 
     # Disclaimer
@@ -337,19 +447,12 @@ with gr.Blocks(css=CSS, title="Escriba Médico") as demo:
         outputs=[texto_input],
     )
 
-    btn_exemplo.click(
-        fn=load_example,
-        outputs=[texto_input],
-    )
-
-    btn_limpar.click(
-        fn=lambda: "",
-        outputs=[texto_input],
-    )
+    btn_exemplo.click(fn=load_example, outputs=[texto_input])
+    btn_limpar.click(fn=lambda: "", outputs=[texto_input])
 
     btn_analisar.click(
         fn=analisar,
-        inputs=[texto_input, api_key_input, provider_radio],
+        inputs=[texto_input, api_key_input, provider_radio, custom_prompt_input],
         outputs=[prontuario1_out, avaliacao_out, decisao_out, prontuario2_out, status_anon],
     )
 

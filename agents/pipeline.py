@@ -17,11 +17,27 @@ from prompts import (
 logger = logging.getLogger(__name__)
 
 
-def run_agent1_translator(texto_anonimizado: str, api_key: str, provider: str) -> str:
-    """Agente 1 — Converte texto bruto em Prontuário 1 estruturado."""
+def run_agent1_translator(
+    texto_anonimizado: str,
+    api_key: str,
+    provider: str,
+    custom_instructions: str = "",
+) -> str:
+    """
+    Agente 1 — Converte texto bruto em Prontuário 1 estruturado.
+    Combina o TRANSLATOR_PROMPT nativo com instruções adicionais opcionais do médico.
+    """
     logger.info("Agente 1 (Tradutor) iniciado")
+    if custom_instructions.strip():
+        prompt = (
+            TRANSLATOR_PROMPT
+            + f"\n\n## Instruções adicionais do médico:\n{custom_instructions}\n"
+            + "\nSiga as instruções adicionais acima, mantendo o formato do prontuário."
+        )
+    else:
+        prompt = TRANSLATOR_PROMPT
     return run_agent(
-        TRANSLATOR_PROMPT,
+        prompt,
         {"texto": texto_anonimizado},
         api_key,
         provider,
