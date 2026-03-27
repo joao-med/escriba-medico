@@ -25,45 +25,45 @@ API_KEY_ENV = os.environ.get("GOOGLE_API_KEY", "")
 PROVIDER_ENV = os.environ.get("LLM_PROVIDER", "google")
 
 TEMPLATES = {
-    "🆕 Consulta livre": "",
-    "🔴 Emergência": "Paciente deu entrada no pronto-socorro com [descreva a queixa]. ",
-    "🫀 Dor Torácica / SCA": (
-        "Paciente com dor torácica. Descreva: início, caráter, irradiação, "
-        "fatores de melhora/piora, sintomas associados (dispneia, sudorese, náusea), "
-        "antecedentes (HAS, DM, dislipidemia, tabagismo, IAM prévio), medicações. "
+    "\U0001F195 Consulta livre": "",
+    "\U0001F534 Emerg\u00eancia": "Paciente deu entrada no pronto-socorro com [descreva a queixa]. ",
+    "\U0001FAC0 Dor Tor\u00e1cica / SCA": (
+        "Paciente com dor tor\u00e1cica. Descreva: in\u00edcio, car\u00e1ter, irradia\u00e7\u00e3o, "
+        "fatores de melhora/piora, sintomas associados (dispneia, sudorese, n\u00e1usea), "
+        "antecedentes (HAS, DM, dislipidemia, tabagismo, IAM pr\u00e9vio), medica\u00e7\u00f5es. "
     ),
-    "🧠 AVC": (
-        "Paciente com suspeita de AVC. Descreva: déficit neurológico (motor, fala, face), "
-        "horário de início ou última vez visto bem, antecedentes (HAS, FA, AVE prévio), "
-        "medicações anticoagulantes. "
+    "\U0001F9E0 AVC": (
+        "Paciente com suspeita de AVC. Descreva: d\u00e9ficit neurol\u00f3gico (motor, fala, face), "
+        "hor\u00e1rio de in\u00edcio ou \u00faltima vez visto bem, antecedentes (HAS, FA, AVE pr\u00e9vio), "
+        "medica\u00e7\u00f5es anticoagulantes. "
     ),
-    "🩸 Sepse": (
-        "Paciente com possível foco infeccioso. Descreva: foco suspeito, tempo de evolução, "
-        "febre, sinais vitais, estado mental, comorbidades, medicações em uso. "
+    "\U0001FA78 Sepse": (
+        "Paciente com poss\u00edvel foco infeccioso. Descreva: foco suspeito, tempo de evolu\u00e7\u00e3o, "
+        "febre, sinais vitais, estado mental, comorbidades, medica\u00e7\u00f5es em uso. "
     ),
-    "😤 Dispneia": (
-        "Paciente com dispneia. Descreva: início, caráter (progressiva/súbita), "
-        "ortopneia, DPN, sibilância, febre, edema, antecedentes cardiopulmonares. "
+    "\U0001F624 Dispneia": (
+        "Paciente com dispneia. Descreva: in\u00edcio, car\u00e1ter (progressiva/s\u00fabita), "
+        "ortopneia, DPN, sibil\u00e2ncia, febre, edema, antecedentes cardiopulmonares. "
     ),
-    "🤕 Politrauma": (
+    "\U0001F915 Politrauma": (
         "Paciente politraumatizado. Descreva: mecanismo do trauma, queixas principais, "
-        "nível de consciência, sinais vitais, áreas de lesão aparente. "
+        "n\u00edvel de consci\u00eancia, sinais vitais, \u00e1reas de les\u00e3o aparente. "
     ),
-    "💊 Intoxicação": (
-        "Paciente com suspeita de intoxicação. Descreva: substância (se conhecida), "
-        "quantidade, via, horário, sintomas atuais, tratamentos realizados. "
+    "\U0001F48A Intoxica\u00e7\u00e3o": (
+        "Paciente com suspeita de intoxica\u00e7\u00e3o. Descreva: subst\u00e2ncia (se conhecida), "
+        "quantidade, via, hor\u00e1rio, sintomas atuais, tratamentos realizados. "
     ),
-    "🔱 PCR / ACLS": (
-        "Paciente em PCR ou pós-RCE. Descreva: ritmo inicial, tempo de PCR, "
-        "manobras realizadas, drogas administradas, ritmo atual, Glasgow pós-RCE. "
+    "\U0001F531 PCR / ACLS": (
+        "Paciente em PCR ou p\u00f3s-RCE. Descreva: ritmo inicial, tempo de PCR, "
+        "manobras realizadas, drogas administradas, ritmo atual, Glasgow p\u00f3s-RCE. "
     ),
 }
 
 EXEMPLO = {
     "texto": (
-        "Paciente do sexo masculino, 58 anos, hipertenso, diabético, tabagista há 30 anos. "
-        "Chegou ao PS às 14h com dor torácica há 2 horas, constrictiva, irradiando para o "
-        "braço esquerdo, EVA 8, associada a sudorese fria e dispneia leve. Nega melhora com "
+        "Paciente do sexo masculino, 58 anos, hipertenso, diab\u00e9tico, tabagista h\u00e1 30 anos. "
+        "Chegou ao PS \u00e0s 14h com dor tor\u00e1cica h\u00e1 2 horas, constrictiva, irradiando para o "
+        "bra\u00e7o esquerdo, EVA 8, associada a sudorese fria e dispneia leve. Nega melhora com "
         "repouso. Usa Metformina 850mg 2x ao dia, Losartana 50mg 1x ao dia e AAS 100mg. "
         "PA 150x90, FC 98, FR 18, SpO2 96%, Tax 36.8. Pai faleceu de infarto aos 60 anos."
     )
@@ -80,10 +80,10 @@ def load_example() -> str:
 
 def validate(texto: str, api_key: str) -> str | None:
     if not texto.strip():
-        return "⚠️ Preencha o texto da consulta antes de analisar."
+        return "\u26a0\ufe0f Preencha o texto da consulta antes de analisar."
     effective_key = api_key.strip() or API_KEY_ENV
     if not effective_key:
-        return "⚠️ Insira uma API Key para executar a análise."
+        return "\u26a0\ufe0f Insira uma API Key para executar a an\u00e1lise."
     return None
 
 
@@ -135,12 +135,12 @@ def regenerar_prontuario2(
     progress=gr.Progress(),
 ) -> str:
     if not prontuario_2_atual.strip():
-        return "⚠️ Execute a análise primeiro para gerar o Prontu\u00e1rio 2."
+        return "\u26a0\ufe0f Execute a an\u00e1lise primeiro para gerar o Prontu\u00e1rio 2."
     if not instrucao.strip():
-        return "⚠️ Digite uma instru\u00e7\u00e3o de revis\u00e3o antes de regenerar."
+        return "\u26a0\ufe0f Digite uma instru\u00e7\u00e3o de revis\u00e3o antes de regenerar."
     effective_key = api_key.strip() or API_KEY_ENV
     if not effective_key:
-        return "⚠️ Insira uma API Key."
+        return "\u26a0\ufe0f Insira uma API Key."
     progress(0.3, desc="Aplicando revis\u00e3o...")
     resultado = run_agent4_revision(prontuario_2_atual, instrucao, effective_key, provider)
     progress(1.0, desc="Revis\u00e3o conclu\u00edda!")
@@ -188,9 +188,8 @@ body, .gradio-container {
 footer { display: none !important; }
 """
 
-# ---- JS: light-mode force + Speech-to-Text ----------------------------
-# NOTE: All dynamic text in JS uses plain ASCII / Latin-1 to avoid
-# Python surrogate issues when encoding the HTTP response.
+# ---- JS: light-mode + Speech-to-Text ----------------------------------
+# raw string: Python does NOT process any backslash sequences inside.
 
 APP_JS = r"""
 () => {
@@ -205,7 +204,7 @@ APP_JS = r"""
     attributes: true, attributeFilter: ['class', 'style']
   });
 
-  /* Speech-to-Text */
+  /* Speech-to-Text — pt-BR, Chrome Web Speech API */
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   let recognition = null, isRec = false;
 
@@ -233,8 +232,8 @@ APP_JS = r"""
 
     recognition.onstart = () => {
       isRec = true;
-      if (btn) { btn.innerHTML = '&#9209; Parar grava&ccedil;&atilde;o'; btn.style.background = '#dc2626'; }
-      if (st)  st.textContent = 'REC Gravando... fale agora';
+      if (btn) { btn.innerHTML = '&#9209; Parar'; btn.style.background = '#dc2626'; }
+      if (st)  st.textContent = 'REC Gravando...';
     };
     recognition.onresult = (e) => {
       let t = '';
@@ -257,7 +256,6 @@ APP_JS = r"""
 }
 """
 
-# HTML entities for emoji avoid any encoding issues
 STT_HTML = """
 <div style="margin: 6px 0 10px 0; display: flex; align-items: center; gap: 10px;">
   <button class="stt-btn" id="stt-btn"
@@ -293,7 +291,7 @@ with gr.Blocks(
             gr.Markdown("**Protocolo r\u00e1pido**")
             template_selector = gr.Dropdown(
                 choices=list(TEMPLATES.keys()),
-                value="\ud83c\udd95 Consulta livre",
+                value=list(TEMPLATES.keys())[0],
                 label="",
                 container=False,
             )
@@ -314,7 +312,7 @@ with gr.Blocks(
                 )
                 gr.Markdown("---")
                 custom_prompt_input = gr.Textbox(
-                    label="\ud83d\udcdd Instru\u00e7\u00f5es adicionais para o Agente 1 (opcional)",
+                    label="\U0001F4DD Instru\u00e7\u00f5es adicionais para o Agente 1 (opcional)",
                     placeholder=(
                         'Ex: "Sempre adicione Escore HEART ao final do prontu\u00e1rio"\n'
                         '"Quando EF ausente, escreva N\u00e3o realizado"\n'
@@ -345,11 +343,11 @@ with gr.Blocks(
             status_anon = gr.Markdown("", elem_classes=["status-bar"])
 
             with gr.Row():
-                btn_exemplo = gr.Button("\ud83d\udccb Exemplo", variant="secondary", size="sm")
-                btn_limpar  = gr.Button("\ud83d\uddd1\ufe0f Limpar",  variant="secondary", size="sm")
+                btn_exemplo = gr.Button("\U0001F4CB Exemplo", variant="secondary", size="sm")
+                btn_limpar  = gr.Button("\U0001F5D1\ufe0f Limpar",  variant="secondary", size="sm")
 
             btn_analisar = gr.Button(
-                "\ud83d\udd0d Analisar Consulta",
+                "\U0001F50D Analisar Consulta",
                 variant="primary",
                 size="lg",
             )
@@ -357,7 +355,7 @@ with gr.Blocks(
         with gr.Column(scale=1):
 
             with gr.Tabs():
-                with gr.Tab("\ud83d\udccb Prontu\u00e1rio 1"):
+                with gr.Tab("\U0001F4CB Prontu\u00e1rio 1"):
                     prontuario1_out = gr.Markdown(
                         value="_Execute a an\u00e1lise para gerar o Prontu\u00e1rio 1._"
                     )
@@ -366,7 +364,7 @@ with gr.Blocks(
                     prontuario2_out = gr.Markdown(
                         value="_Execute a an\u00e1lise para gerar o Prontu\u00e1rio 2._"
                     )
-                    gr.Markdown("---\n**\ud83d\udcac Revisar Prontu\u00e1rio 2**")
+                    gr.Markdown("---\n**\U0001F4AC Revisar Prontu\u00e1rio 2**")
                     instrucao_input = gr.Textbox(
                         label="Instru\u00e7\u00e3o de revis\u00e3o",
                         placeholder=(
@@ -376,10 +374,10 @@ with gr.Blocks(
                         lines=3,
                     )
                     btn_regenerar = gr.Button(
-                        "\ud83d\udd04 Regenerar Prontu\u00e1rio 2", variant="secondary"
+                        "\U0001F504 Regenerar Prontu\u00e1rio 2", variant="secondary"
                     )
 
-                with gr.Tab("\ud83e\udde0 Decis\u00e3o Cl\u00ednica"):
+                with gr.Tab("\U0001F9E0 Decis\u00e3o Cl\u00ednica"):
                     decisao_out = gr.Markdown(
                         value="_Execute a an\u00e1lise para ver a decis\u00e3o cl\u00ednica._"
                     )
@@ -389,13 +387,13 @@ with gr.Blocks(
                         value="_Execute a an\u00e1lise para ver as sugest\u00f5es._"
                     )
 
-            btn_nova = gr.Button("\ud83c\udd95 Nova Consulta", variant="secondary")
+            btn_nova = gr.Button("\U0001F195 Nova Consulta", variant="secondary")
 
     gr.HTML("""
     <div style="margin-top: 16px; padding: 10px; background: #fff8e1;
                 border-left: 3px solid #f59e0b; border-radius: 4px;
                 font-size: 0.78rem; color: #555;">
-        &#9877;\ufe0f <strong>Ferramenta de suporte cl\u00ednico</strong> \u2014
+        &#9877;&#65039; <strong>Ferramenta de suporte cl\u00ednico</strong> &mdash;
         n\u00e3o substitui o julgamento m\u00e9dico.
         Toda conduta deve ser validada por profissional habilitado.
         Inspirado no AMIE (Google DeepMind).
