@@ -105,7 +105,7 @@ def analisar(
         texto_anonimizado = anonymize(texto)
         status_anon = get_anonymization_summary(texto, texto_anonimizado)
 
-        progress(0.2, desc="Agente 1: estruturando prontuário...")
+        progress(0.2, desc="Agente 1: estruturando prontu\u00e1rio...")
         prontuario_1 = run_agent1_translator(
             texto_anonimizado, effective_key, provider, custom_prompt
         )
@@ -113,18 +113,18 @@ def analisar(
         progress(0.45, desc="Agente 2: avaliando lacunas...")
         avaliacao = run_agent2_evaluator(prontuario_1, effective_key, provider)
 
-        progress(0.65, desc="Agente 3: raciocínio clínico...")
+        progress(0.65, desc="Agente 3: racioc\u00ednio cl\u00ednico...")
         decisao = run_agent3_emergency(prontuario_1, effective_key, provider)
 
-        progress(0.85, desc="Agente 4: consolidando prontuário final...")
+        progress(0.85, desc="Agente 4: consolidando prontu\u00e1rio final...")
         prontuario_2 = run_agent4_summarizer(prontuario_1, decisao, effective_key, provider)
 
-        progress(1.0, desc="Concluído!")
-        return prontuario_1, avaliacao, decisao, prontuario_2, f"✅ {status_anon}"
+        progress(1.0, desc="Conclu\u00eddo!")
+        return prontuario_1, avaliacao, decisao, prontuario_2, f"\u2705 {status_anon}"
 
     except Exception as e:
         logger.error(f"Erro no pipeline: {e}")
-        return f"❌ Erro durante análise: {str(e)}", "", "", "", ""
+        return f"\u274c Erro durante an\u00e1lise: {str(e)}", "", "", "", ""
 
 
 def regenerar_prontuario2(
@@ -135,15 +135,15 @@ def regenerar_prontuario2(
     progress=gr.Progress(),
 ) -> str:
     if not prontuario_2_atual.strip():
-        return "⚠️ Execute a análise primeiro para gerar o Prontuário 2."
+        return "⚠️ Execute a análise primeiro para gerar o Prontu\u00e1rio 2."
     if not instrucao.strip():
-        return "⚠️ Digite uma instrução de revisão antes de regenerar."
+        return "⚠️ Digite uma instru\u00e7\u00e3o de revis\u00e3o antes de regenerar."
     effective_key = api_key.strip() or API_KEY_ENV
     if not effective_key:
         return "⚠️ Insira uma API Key."
-    progress(0.3, desc="Aplicando revisão...")
+    progress(0.3, desc="Aplicando revis\u00e3o...")
     resultado = run_agent4_revision(prontuario_2_atual, instrucao, effective_key, provider)
-    progress(1.0, desc="Revisão concluída!")
+    progress(1.0, desc="Revis\u00e3o conclu\u00edda!")
     return resultado
 
 
@@ -151,14 +151,12 @@ def nova_consulta():
     return ("", "", "", "", "", "", "")
 
 
-# ── CSS ───────────────────────────────────────────────────────────────────────
+# ---- CSS ---------------------------------------------------------------
 
 CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* Force light mode */
 :root, html { color-scheme: light only !important; }
-.dark, html.dark, body.dark { all: unset !important; }
 
 body, .gradio-container {
     font-family: 'Inter', system-ui, sans-serif !important;
@@ -190,11 +188,13 @@ body, .gradio-container {
 footer { display: none !important; }
 """
 
-# ── JS: light mode enforcement + Speech-to-Text ──────────────────────────────
+# ---- JS: light-mode force + Speech-to-Text ----------------------------
+# NOTE: All dynamic text in JS uses plain ASCII / Latin-1 to avoid
+# Python surrogate issues when encoding the HTTP response.
 
-APP_JS = """
+APP_JS = r"""
 () => {
-  /* ---- Force light mode ---- */
+  /* Force light mode */
   const forceLight = () => {
     document.documentElement.classList.remove('dark');
     document.body.classList.remove('dark');
@@ -205,7 +205,7 @@ APP_JS = """
     attributes: true, attributeFilter: ['class', 'style']
   });
 
-  /* ---- Speech-to-Text (Web Speech API, pt-BR) ---- */
+  /* Speech-to-Text */
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   let recognition = null, isRec = false;
 
@@ -221,7 +221,7 @@ APP_JS = """
     const btn = document.getElementById('stt-btn');
     const st  = document.getElementById('stt-status');
     if (!SR) {
-      if (st) st.textContent = '\u26a0\ufe0f Use Chrome para speech-to-text';
+      if (st) st.textContent = 'Use Chrome para speech-to-text';
       return;
     }
     if (isRec) { recognition.stop(); return; }
@@ -233,8 +233,8 @@ APP_JS = """
 
     recognition.onstart = () => {
       isRec = true;
-      if (btn) { btn.textContent = '\u23f9\ufe0f Parar grava\u00e7\u00e3o'; btn.style.background = '#dc2626'; }
-      if (st)  st.textContent = '\ud83d\udd34 Gravando... fale agora';
+      if (btn) { btn.innerHTML = '&#9209; Parar grava&ccedil;&atilde;o'; btn.style.background = '#dc2626'; }
+      if (st)  st.textContent = 'REC Gravando... fale agora';
     };
     recognition.onresult = (e) => {
       let t = '';
@@ -244,44 +244,45 @@ APP_JS = """
     };
     recognition.onend = () => {
       isRec = false;
-      if (btn) { btn.textContent = '\ud83c\udfa4 Gravar \u00e1udio'; btn.style.background = ''; }
+      if (btn) { btn.innerHTML = '&#127908; Gravar &aacute;udio'; btn.style.background = ''; }
       if (st)  st.textContent = '';
     };
     recognition.onerror = (e) => {
-      if (st) st.textContent = '\u26a0\ufe0f ' + e.error;
+      if (st) st.textContent = 'Erro: ' + e.error;
       isRec = false;
-      if (btn) { btn.textContent = '\ud83c\udfa4 Gravar \u00e1udio'; btn.style.background = ''; }
+      if (btn) { btn.innerHTML = '&#127908; Gravar &aacute;udio'; btn.style.background = ''; }
     };
     recognition.start();
   };
 }
 """
 
+# HTML entities for emoji avoid any encoding issues
 STT_HTML = """
 <div style="margin: 6px 0 10px 0; display: flex; align-items: center; gap: 10px;">
   <button class="stt-btn" id="stt-btn"
           onclick="window.toggleSTT && window.toggleSTT()"
           title="Transcri\u00e7\u00e3o por voz em portugu\u00eas \u2014 requer Chrome">
-    \ud83c\udfa4 Gravar \u00e1udio
+    &#127908; Gravar \u00e1udio
   </button>
   <span class="stt-status" id="stt-status"></span>
 </div>
 """
 
-# ── Interface Gradio ──────────────────────────────────────────────────────────
+# ---- Interface Gradio --------------------------------------------------
 
 with gr.Blocks(
     css=CSS,
-    title="Escriba Médico",
+    title="Escriba M\u00e9dico",
     theme=gr.themes.Default(),
     js=APP_JS,
 ) as demo:
 
     gr.HTML("""
     <div style="padding: 16px 0 8px 0; border-bottom: 1px solid #e5e7eb; margin-bottom: 16px;">
-        <span class="header-title">🩺 Escriba Médico</span>
+        <span class="header-title">&#129658; Escriba M\u00e9dico</span>
         <span class="header-sub" style="margin-left: 12px;">
-            Suporte clínico multiagente · Pronto-Socorro
+            Suporte cl\u00ednico multiagente &middot; Pronto-Socorro
         </span>
     </div>
     """)
@@ -289,18 +290,18 @@ with gr.Blocks(
     with gr.Row():
         with gr.Column(scale=1):
 
-            gr.Markdown("**Protocolo rápido**")
+            gr.Markdown("**Protocolo r\u00e1pido**")
             template_selector = gr.Dropdown(
                 choices=list(TEMPLATES.keys()),
-                value="🆕 Consulta livre",
+                value="\ud83c\udd95 Consulta livre",
                 label="",
                 container=False,
             )
 
-            with gr.Accordion("⚙️ Configuração", open=False):
+            with gr.Accordion("\u2699\ufe0f Configura\u00e7\u00e3o", open=False):
                 api_key_input = gr.Textbox(
                     label="API Key",
-                    placeholder="Cole sua chave aqui (ou configure via variável de ambiente)",
+                    placeholder="Cole sua chave aqui (ou configure via vari\u00e1vel de ambiente)",
                     type="password",
                 )
                 provider_radio = gr.Radio(
@@ -309,14 +310,14 @@ with gr.Blocks(
                     label="Provedor LLM",
                 )
                 gr.Markdown(
-                    "_Google: Gemma 27B (grátis) · Anthropic: Claude Sonnet (melhor qualidade)_",
+                    "_Google: Gemma 27B (gr\u00e1tis) \u00b7 Anthropic: Claude Sonnet (melhor qualidade)_",
                 )
                 gr.Markdown("---")
                 custom_prompt_input = gr.Textbox(
-                    label="📝 Instruções adicionais para o Agente 1 (opcional)",
+                    label="\ud83d\udcdd Instru\u00e7\u00f5es adicionais para o Agente 1 (opcional)",
                     placeholder=(
-                        'Ex: "Sempre adicione Escore HEART ao final do prontuário"\n'
-                        '"Quando EF ausente, escreva N\u00e3o realizado ao inv\u00e9s de N\u00e3o informado"\n'
+                        'Ex: "Sempre adicione Escore HEART ao final do prontu\u00e1rio"\n'
+                        '"Quando EF ausente, escreva N\u00e3o realizado"\n'
                         '"Destaque sinais de alarme em negrito"'
                     ),
                     lines=4,
@@ -328,10 +329,10 @@ with gr.Blocks(
                 placeholder=(
                     "Digite ou cole o texto da consulta aqui.\n\n"
                     "Pode ser:\n"
-                    "• Transcrição de áudio\n"
-                    "• Anotações rápidas\n"
-                    "• Relato em linguagem livre\n\n"
-                    "Ex: 'Paciente 58 anos, dor torácica há 2h, constrictiva, "
+                    "\u2022 Transcri\u00e7\u00e3o de \u00e1udio\n"
+                    "\u2022 Anota\u00e7\u00f5es r\u00e1pidas\n"
+                    "\u2022 Relato em linguagem livre\n\n"
+                    "Ex: 'Paciente 58 anos, dor tor\u00e1cica h\u00e1 2h, constrictiva, "
                     "irradiando para MSE, EVA 8...'"
                 ),
                 lines=14,
@@ -344,11 +345,11 @@ with gr.Blocks(
             status_anon = gr.Markdown("", elem_classes=["status-bar"])
 
             with gr.Row():
-                btn_exemplo = gr.Button("📋 Exemplo", variant="secondary", size="sm")
-                btn_limpar = gr.Button("🗑️ Limpar", variant="secondary", size="sm")
+                btn_exemplo = gr.Button("\ud83d\udccb Exemplo", variant="secondary", size="sm")
+                btn_limpar  = gr.Button("\ud83d\uddd1\ufe0f Limpar",  variant="secondary", size="sm")
 
             btn_analisar = gr.Button(
-                "🔍 Analisar Consulta",
+                "\ud83d\udd0d Analisar Consulta",
                 variant="primary",
                 size="lg",
             )
@@ -356,46 +357,46 @@ with gr.Blocks(
         with gr.Column(scale=1):
 
             with gr.Tabs():
-                with gr.Tab("📋 Prontuário 1"):
+                with gr.Tab("\ud83d\udccb Prontu\u00e1rio 1"):
                     prontuario1_out = gr.Markdown(
-                        value="_Execute a análise para gerar o Prontuário 1._"
+                        value="_Execute a an\u00e1lise para gerar o Prontu\u00e1rio 1._"
                     )
 
-                with gr.Tab("✅ Prontuário 2 Final"):
+                with gr.Tab("\u2705 Prontu\u00e1rio 2 Final"):
                     prontuario2_out = gr.Markdown(
-                        value="_Execute a análise para gerar o Prontuário 2._"
+                        value="_Execute a an\u00e1lise para gerar o Prontu\u00e1rio 2._"
                     )
-                    gr.Markdown("---\n**💬 Revisar Prontuário 2**")
+                    gr.Markdown("---\n**\ud83d\udcac Revisar Prontu\u00e1rio 2**")
                     instrucao_input = gr.Textbox(
-                        label="Instrução de revisão",
+                        label="Instru\u00e7\u00e3o de revis\u00e3o",
                         placeholder=(
-                            'Ex: "inclua hipótese de TEP como diferencial", '
-                            '"remova menção ao AAS da conduta", '
-                            '"reformule o plano em tópicos numerados"'
+                            'Ex: "inclua hip\u00f3tese de TEP como diferencial", '
+                            '"reformule o plano em t\u00f3picos numerados"'
                         ),
                         lines=3,
                     )
                     btn_regenerar = gr.Button(
-                        "🔄 Regenerar Prontuário 2", variant="secondary"
+                        "\ud83d\udd04 Regenerar Prontu\u00e1rio 2", variant="secondary"
                     )
 
-                with gr.Tab("🧠 Decisão Clínica"):
+                with gr.Tab("\ud83e\udde0 Decis\u00e3o Cl\u00ednica"):
                     decisao_out = gr.Markdown(
-                        value="_Execute a análise para ver a decisão clínica._"
+                        value="_Execute a an\u00e1lise para ver a decis\u00e3o cl\u00ednica._"
                     )
 
-                with gr.Tab("⚠️ Avaliação"):
+                with gr.Tab("\u26a0\ufe0f Avalia\u00e7\u00e3o"):
                     avaliacao_out = gr.Markdown(
-                        value="_Execute a análise para ver as sugestões._"
+                        value="_Execute a an\u00e1lise para ver as sugest\u00f5es._"
                     )
 
-            btn_nova = gr.Button("🆕 Nova Consulta", variant="secondary")
+            btn_nova = gr.Button("\ud83c\udd95 Nova Consulta", variant="secondary")
 
     gr.HTML("""
     <div style="margin-top: 16px; padding: 10px; background: #fff8e1;
                 border-left: 3px solid #f59e0b; border-radius: 4px;
                 font-size: 0.78rem; color: #555;">
-        ⚕️ <strong>Ferramenta de suporte clínico</strong> — não substitui o julgamento médico.
+        &#9877;\ufe0f <strong>Ferramenta de suporte cl\u00ednico</strong> \u2014
+        n\u00e3o substitui o julgamento m\u00e9dico.
         Toda conduta deve ser validada por profissional habilitado.
         Inspirado no AMIE (Google DeepMind).
     </div>
