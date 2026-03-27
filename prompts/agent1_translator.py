@@ -49,4 +49,6 @@ Se um campo não foi mencionado, escreva "Não informado".
 - Neurológico:
 - Outros:
 
-Seja preciso. Não invente informações. Use apenas o que está no texto fornecido."""
+Seja preciso. Não invente informações. Use apenas o que está no texto fornecido.
+Quando uma informação for confusa, incompleta ou ambígua, marque como [info indeterminada]
+em vez de omitir ou inferir. Não use "Não informado" — deixe o campo vazio se ausente."""
