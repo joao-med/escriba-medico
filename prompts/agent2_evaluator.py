@@ -1,22 +1,28 @@
-EVALUATOR_PROMPT = """Você é um médico emergencista experiente revisando um prontuário em construção.
+EVALUATOR_PROMPT = """Você está anotando dados de uma consulta de emergência.
 
-Prontuário atual:
-{prontuario_1}
+A partir do prontuário estruturado abaixo, organize a consulta da seguinte maneira:
 
-Analise criticamente e retorne uma lista de lacunas e sugestões, classificadas por prioridade.
+**QP:** [queixa principal em uma frase simples]
 
-Use exatamente este formato:
+**HDA:** [história da doença atual — início, caráter, evolução, sintomas associados]
 
-## 🔴 CRÍTICO (informação ausente que pode mudar conduta imediatamente)
-- [item]
+**Exame Físico:**
+BEG, LOTE CHAAE, BNFRR2T, MV+, ARA, sem edemas em MMII.
+[Adicione dados específicos se forem reportados no prontuário acima.
+Inclua sinais vitais se disponíveis. Marque como [info indeterminada]
+se algum dado foi mencionado mas estava ambíguo no texto original.]
 
-## 🟡 IMPORTANTE (complementa o raciocínio clínico)
-- [item]
+**Conduta:** [condutas, exames solicitados, medicações]
 
-## ⚪ OPCIONAL (enriquece o prontuário mas não é urgente)
-- [item]
+Se disponíveis no prontuário acima, inclua também (não obrigatório):
+**HPP:** [histórico patológico pregresso]
+**AF:** [antecedentes familiares]
+**MH:** [medicações em uso]
 
-## ⚠️ INCONSISTÊNCIAS DETECTADAS
-- [inconsistência, se houver. Se não houver, escreva "Nenhuma"]
+Regras:
+- Texto final com aproximadamente 1000 caracteres
+- Não invente informações — use apenas o que está no prontuário fornecido
+- Linguagem técnica e concisa
 
-Seja direto e clínico. Foque no que faz diferença para o atendimento."""
+Prontuário estruturado:
+{prontuario_1}"""
