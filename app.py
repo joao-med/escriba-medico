@@ -7,7 +7,6 @@ Baseado no amie-agents (fabianonbfilho).
 import os
 import logging
 import gradio as gr
-from datetime import datetime
 
 from agents import (
     run_agent1_translator,
@@ -23,42 +22,6 @@ logger = logging.getLogger(__name__)
 API_KEY_ENV = os.environ.get("GOOGLE_API_KEY", "")
 PROVIDER_ENV = os.environ.get("LLM_PROVIDER", "google")  # "google" ou "anthropic"
 
-# ── Templates de protocolo rápido ───────────────────────────────────────────────
-TEMPLATES = {
-    "\U0001F195 Consulta livre": "",
-    "\U0001F534 Emergência": "Paciente deu entrada no pronto-socorro com [descreva a queixa]. ",
-    "\U0001FAC0 Dor Torácica / SCA": (
-        "Paciente com dor torácica. Descreva: início, caráter, irradiação, "
-        "fatores de melhora/piora, sintomas associados (dispneia, sudorese, náusea), "
-        "antecedentes (HAS, DM, dislipidemia, tabagismo, IAM prévio), medicações. "
-    ),
-    "\U0001F9E0 AVC": (
-        "Paciente com suspeita de AVC. Descreva: déficit neurológico (motor, fala, face), "
-        "horário de início ou última vez visto bem, antecedentes (HAS, FA, AVE prévio), "
-        "medicações anticoagulantes. "
-    ),
-    "\U0001FA78 Sepse": (
-        "Paciente com possível foco infeccioso. Descreva: foco suspeito, tempo de evolução, "
-        "febre, sinais vitais, estado mental, comorbidades, medicações em uso. "
-    ),
-    "\U0001F624 Dispneia": (
-        "Paciente com dispneia. Descreva: início, caráter (progressiva/súbita), "
-        "ortopneia, DPN, sibilância, febre, edema, antecedentes cardiopulmonares. "
-    ),
-    "\U0001F915 Politrauma": (
-        "Paciente politraumatizado. Descreva: mecanismo do trauma, queixas principais, "
-        "nível de consciência, sinais vitais, áreas de lesão aparente. "
-    ),
-    "\U0001F48A Intoxicação": (
-        "Paciente com suspeita de intoxicação. Descreva: substância (se conhecida), "
-        "quantidade, via, horário, sintomas atuais, tratamentos realizados. "
-    ),
-    "\U0001F531 PCR / ACLS": (
-        "Paciente em PCR ou pós-RCE. Descreva: ritmo inicial, tempo de PCR, "
-        "manobras realizadas, drogas administradas, ritmo atual, Glasgow pós-RCE. "
-    ),
-}
-
 EXEMPLO = {
     "texto": (
         "Paciente do sexo masculino, 58 anos, hipertenso, diabético, tabagista há 30 anos. "
@@ -71,10 +34,6 @@ EXEMPLO = {
 
 
 # ── Funções principais ───────────────────────────────────────────────────────────
-def load_template(template_name: str) -> str:
-    return TEMPLATES.get(template_name, "")
-
-
 def load_example() -> str:
     return EXEMPLO["texto"]
 
@@ -299,14 +258,6 @@ with gr.Blocks(
         # ── Coluna esquerda — INPUT ────────────────────────────────────────────────
         with gr.Column(scale=1):
 
-            gr.Markdown("**Protocolo rápido**")
-            template_selector = gr.Dropdown(
-                choices=list(TEMPLATES.keys()),
-                value="\U0001F195 Consulta livre",
-                label="",
-                container=False,
-            )
-
             with gr.Accordion("\u2699\ufe0f Configuração", open=False):
                 api_key_input = gr.Textbox(
                     label="API Key",
@@ -384,9 +335,6 @@ with gr.Blocks(
     """)
 
     # ── Eventos ────────────────────────────────────────────────────────────────────
-    template_selector.change(
-        fn=load_template, inputs=[template_selector], outputs=[texto_input]
-    )
     btn_exemplo.click(fn=load_example, outputs=[texto_input])
     btn_limpar.click(fn=lambda: "", outputs=[texto_input])
 
